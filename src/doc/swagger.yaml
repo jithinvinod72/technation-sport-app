@@ -23,6 +23,47 @@ paths:
                       $ref: '#/components/schemas/Question'
         '500':
           description: Failed to retrieve questions
+  /coach-questions:
+    get:
+      summary: Get a list of questions for coaches
+      description: Retrieves a JSON object containing a list of questions that are meant to be answered by coaches.
+      responses:
+        '200':
+          description: A list of questions for coaches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - questionName
+                        - question
+                        - questionType
+                      properties:
+                        id:
+                          type: integer
+                          description: The question's unique identifier.
+                        questionName:
+                          type: string
+                          description: A name identifier for the question.
+                        question:
+                          type: string
+                          description: The text of the question.
+                        questionType:
+                          type: string
+                          description: The type of response expected for the question (e.g., text, checkbox, number).
+                        options:
+                          type: array
+                          items:
+                            type: string
+                          description: Possible options for the question (applicable to types like 'checkbox' or 'radio').
+        '500':
+          description: Server error
 components:
   schemas:
     Question:
