@@ -1,0 +1,52 @@
+openapi: 3.0.0
+info:
+  title: Sports Nutrition Planner API
+  version: 1.0.0
+  description: API documentation for the Sports Nutrition Planner app
+servers:
+  - url: http://localhost:3000
+paths:
+  /questions:
+    get:
+      summary: Retrieve a list of questions
+      responses:
+        '200':
+          description: Successfully retrieved list of questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Question'
+        '500':
+          description: Failed to retrieve questions
+components:
+  schemas:
+    Question:
+      type: object
+      required:
+        - id
+        - questionName
+        - question
+        - questionType
+      properties:
+        id:
+          type: integer
+          description: The question ID.
+        questionName:
+          type: string
+          description: The name of the question.
+        question:
+          type: string
+          description: The question text.
+        questionType:
+          type: string
+          description: The type of question (e.g., radio, text).
+        options:
+          type: array
+          items:
+            type: string
+          description: The available options for the question.
