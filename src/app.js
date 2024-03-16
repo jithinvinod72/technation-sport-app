@@ -94,11 +94,11 @@ app.post('/save-user', async (req, res) => {
             .from('Users')
             .insert([
                 {
-                    "FirstName": firstName,
-                    "LastName": lastName,
-                    "Email": email,
+                    firstName,
+                    lastName,
+                    email,
                     password,
-                    "userRoleId": userRoleId
+                    userRoleId
                 }
             ]).select('*');
 
