@@ -64,6 +64,136 @@ paths:
                           description: Possible options for the question (applicable to types like 'checkbox' or 'radio').
         '500':
           description: Server error
+    /save-user:
+    post:
+      summary: Save user and related data
+      description: Saves user information and related data to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                userRoleId:
+                  type: integer
+                userData:
+                  type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - userRoleId
+                - userData
+      responses:
+        '200':
+          description: User and related data saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      userInfo:
+                        $ref: '#/components/schemas/UserData'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Failed to save user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: string
+  /get-user/{id}:
+    get:
+      summary: Get user by ID
+      description: Retrieves user information and related data by user ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: User ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Failed to retrieve user info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: string
+  /get-all-users:
+    get:
+      summary: Get all users
+      description: Retrieves information of all users.
+      responses:
+        '200':
+          description: Users information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '500':
+          description: Failed to retrieve all users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: string
 components:
   schemas:
     Question:
@@ -91,3 +221,29 @@ components:
           items:
             type: string
           description: The available options for the question.
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        userRoleId:
+          type: integer
+    UserData:
+      type: object
+      properties:
+        userId:
+          type: string
+    UserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        userData:
+          $ref: '#/components/schemas/UserData'
