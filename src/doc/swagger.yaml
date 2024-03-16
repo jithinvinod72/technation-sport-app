@@ -194,6 +194,75 @@ paths:
                     type: string
                   error:
                     type: string
+  /save-user:
+    post:
+      summary: Save user and related data
+      description: Saves user information and related data to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                userRoleId:
+                  type: integer
+                userData:
+                  type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - userRoleId
+                - userData
+      responses:
+        '200':
+          description: User and related data saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      userInfo:
+                        $ref: '#/components/schemas/UserData'
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Failed to save user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  error:
+                    type: string
+
 components:
   schemas:
     Question:
