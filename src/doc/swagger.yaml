@@ -262,6 +262,23 @@ paths:
                     type: string
                   error:
                     type: string
+  /userroles:
+    get:
+      summary: Get all user roles
+      description: Fetches all user roles from the userroles table.
+      responses:
+        '200':
+          description: A list of user roles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserRole'
+        '404':
+          description: No user roles found.
+        '500':
+          description: Internal Server Error
 
 components:
   schemas:

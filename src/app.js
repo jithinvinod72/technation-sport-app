@@ -56,6 +56,28 @@ app.get('/coach-questions', (req, res) => {
     }
 });
 
+//userRoles
+//#region USER ROLES
+app.get('/getUserRoles', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('UserRoles')
+            .select('*');
+
+        if (error) throw error;
+
+        if (data) {
+            res.json(data);
+        } else {
+            res.status(404).send('No user roles found');
+        }
+    } catch (err) {
+        console.error('Error fetching user roles:', err.message);
+        res.status(500).send('Internal Server Error');
+    }
+});
+//#endregion
+
 //user
 //#region  USER
 app.post('/save-user', async (req, res) => {
