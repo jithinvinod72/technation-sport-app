@@ -2,7 +2,7 @@ const questionsData = {
     "questions": [
       {
         "id": 1,
-        "questionName": "sportType",
+        "questionName": "sports",
         "question": "What sport are you training for?",
         "questionType": "radio",
         "options": ["Football", "Basketball", "Running", "Cycling", "Swimming", "Other"],
@@ -10,18 +10,18 @@ const questionsData = {
         "parentQuestionAnswer": null
       },
       {
-        "id": 2,
-        "questionName": "specificSportDetail",
-        "parentQuestionId": 1,
-        "parentQuestionAnswer": "Other",
-        "question": "Please specify the sport.",
-        "questionType": "text",
-        "options": null
-      },
-      {
         "id": 3,
         "questionName": "weight",
         "question": "What is your weight (in kilograms)?",
+        "questionType": "number",
+        "options": null,
+        "parentQuestionId": null,
+        "parentQuestionAnswer": null
+      },
+      {
+        "id": 10,
+        "questionName": "age",
+        "question": "What is your age?",
         "questionType": "number",
         "options": null,
         "parentQuestionId": null,
@@ -38,7 +38,7 @@ const questionsData = {
       },
       {
         "id": 5,
-        "questionName": "mealsPerDay",
+        "questionName": "mealsAmount",
         "question": "How many meals do you take per day?",
         "questionType": "radio",
         "options": ["2", "3", "4", "More than 4"],
@@ -47,7 +47,7 @@ const questionsData = {
       },
       {
         "id": 6,
-        "questionName": "dietaryPreferences",
+        "questionName": "dietaryRestrictions",
         "question": "What are your dietary preferences?",
         "questionType": "radio",
         "options": ["Vegan", "Vegetarian", "Non-Vegan"],
@@ -56,7 +56,7 @@ const questionsData = {
       },
       {
         "id": 7,
-        "questionName": "habits",
+        "questionName": "smoking",
         "question": "Do you have any of these habits?",
         "questionType": "checkbox",
         "options": ["Smoking", "Non-Smoking"],
@@ -65,7 +65,7 @@ const questionsData = {
       },
       {
         "id": 8,
-        "questionName": "trainingType",
+        "questionName": "trainingPhase",
         "question": "What kind of training are you doing?",
         "questionType": "radio",
         "options": ["Preparing for a sport tomorrow", "Preparing for a sport in 3 weeks", "Recovering"],
@@ -74,7 +74,7 @@ const questionsData = {
       },
       {
         "id": 9,
-        "questionName": "nextGameDate",
+        "questionName": "dateOfGame",
         "question": "When is your next game (optional)?",
         "questionType": "date",
         "options": null,

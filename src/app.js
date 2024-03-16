@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
+const bodyParser = require('body-parser');
 const YAML = require('yamljs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
@@ -14,7 +15,7 @@ const coachQuestionsData = require('./json/coachQuestions');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+app.use(bodyParser.json({limit: '50mb'}));
 require('dotenv').config();
 
 // Configure Supabase
@@ -82,11 +83,39 @@ app.get('/getUserRoles', async (req, res) => {
 //#region  USER
 app.post('/save-user', async (req, res) => {
     try {
-        const { firstName, lastName, email, password, userRoleId, userData } = req.body;
+        const { firstName, lastName, email, password, userRoleId, userData,image } = req.body;
 
         // Initial input validation for null values
         if (!firstName || !lastName || !email || !password || !userRoleId || !userData) {
             return res.status(400).json({ message: "Missing required fields." });
+        }
+        if(image){
+            const fileName = `images/${Date.now()}.png`;
+            let imageUrl="";
+            // Convert base64 to buffer as Supabase storage expects a Blob/File/Buffer
+            const imageBuffer = Buffer.from(image, 'base64')
+            const { data, error } = await supabase
+            .storage
+            .from('imageBucket')
+            .upload(fileName, imageBuffer, {
+                contentType: 'image/png', 
+                upsert: false 
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            // Optionally, generate a public URL for the uploaded image
+            const { publicURL, error: urlError } = supabase
+                .storage
+                .from('imageBucket')
+                .getPublicUrl(fileName);
+
+            if (urlError) {
+                throw urlError;
+            }
+            if(publicURL) imageUrl=publicURL;
         }
 
         // Insert into Users table
@@ -109,7 +138,8 @@ app.post('/save-user', async (req, res) => {
 
         const userDataModel = {
             "userId": userId,
-            ...userData
+            ...userData,
+            "imagePath": imageUrl
         };
 
         // Insert into UserData table
@@ -191,6 +221,33 @@ app.get('/get-all-users', async (req, res) => {
     }
 });
 
+app.get('/get-image-path/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const { data, error } = await supabase
+            .from('user')
+            .select('imagePath')
+            .eq('id', userId)
+            .single(); 
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            return res.status(404).send('User not found or no image path available');
+        }
+        const imagePath = data.imagePath;
+        res.status(200).json({
+            message: 'Image path fetched successfully',
+            imagePath: imagePath
+        });
+    } catch (err) {
+        console.error('Error fetching image path:', err.message);
+        res.status(500).send(err.message);
+    }
+});
 
 //#endregion
 
