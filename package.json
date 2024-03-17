@@ -18,9 +18,13 @@
     "supabase": "^1.148.6",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
+    "uuid": "^9.0.1",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
+  },
+  "prettier": {
+    "printWidth": 120
   }
 }
