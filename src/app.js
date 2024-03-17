@@ -6,6 +6,7 @@ const YAML = require("yamljs");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const uuid = require("uuid");
+const sha256 = require("js-sha256").sha256;
 
 const OpenAI = require("openai");
 
@@ -88,12 +89,13 @@ app.post("/save-user", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    if (userData.image) {
+    let imageUrl = "";
+
+    if (userData.imagePath) {
       console.log("User provided image");
       const fileName = `images/${uuid.v4()}.png`;
-      let imageUrl = "";
       // Convert base64 to buffer as Supabase storage expects a Blob/File/Buffer
-      const imageBuffer = Buffer.from(userData.image, "base64");
+      const imageBuffer = Buffer.from(prepareBase64DataUrl(userData.imagePath), "base64");
       const { data, error } = await supabase.storage.from("imageBucket").upload(fileName, imageBuffer, {
         contentType: "image/png",
         upsert: false,
@@ -104,12 +106,15 @@ app.post("/save-user", async (req, res) => {
       }
 
       // Optionally, generate a public URL for the uploaded image
-      const { publicURL, error: urlError } = supabase.storage.from("imageBucket").getPublicUrl(fileName);
+      const publicUrlResponse = supabase.storage.from("imageBucket").getPublicUrl(fileName);
 
-      if (urlError) {
-        throw urlError;
+      if (publicUrlResponse.error) {
+        throw publicUrlResponse.error;
       }
-      if (publicURL) imageUrl = publicURL;
+
+      if (publicUrlResponse.data) {
+        imageUrl = publicUrlResponse.data.publicUrl;
+      }
     }
 
     // Insert into Users table
@@ -120,20 +125,35 @@ app.post("/save-user", async (req, res) => {
           firstName,
           lastName,
           email,
-          password,
+          password: sha256(password),
           userRoleId,
         },
       ])
       .select("*");
 
-    if (userError) throw new Error(userError.message);
-    if (!userArray || userArray.length === 0) throw new Error("User insertion failed.");
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    if (!userArray || userArray.length === 0) {
+      throw new Error("User insertion failed.");
+    }
 
     const userId = userArray[0].id;
 
+    const [Y, M, D] = userData["dateOfGame"].split("-");
     const userDataModel = {
-      userId: userId,
-      ...userData,
+      userId,
+      sport: userData["sport"],
+      age: parseInt(userData["age"]),
+      weight: parseInt(userData["weight"]),
+      height: parseInt(userData["height"]),
+      trainingPhase: userData["trainingPhase"],
+      mealsAmount: userData["mealsAmount"],
+      dietaryRestrictions: userData["dietaryRestrictions"],
+      allergies: userData["allergies"],
+      smoking: userData["smoking"] === "Yes",
+      dateOfGame: new Date(Y, parseInt(M) - 1, D), // month is 0-indexed
       imagePath: imageUrl,
     };
 
@@ -143,8 +163,13 @@ app.post("/save-user", async (req, res) => {
       .insert([userDataModel])
       .select("*");
 
-    if (userDataError) throw new Error(userDataError.message);
-    if (!userInfoArray || userInfoArray.length === 0) throw new Error("UserData insertion failed.");
+    if (userDataError) {
+      throw new Error(userDataError.message);
+    }
+
+    if (!userInfoArray || userInfoArray.length === 0) {
+      throw new Error("UserData insertion failed.");
+    }
 
     // Constructing the response data with null checks
     const responseData = {
@@ -215,7 +240,7 @@ app.get("/get-image-path/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const { data, error } = await supabase.from("user").select("imagePath").eq("id", userId).single();
+    const { data, error } = await supabase.from("UserData").select("imagePath").eq("userId", userId).single();
 
     if (error) {
       throw error;
@@ -227,7 +252,7 @@ app.get("/get-image-path/:userId", async (req, res) => {
     const imagePath = data.imagePath;
     res.status(200).json({
       message: "Image path fetched successfully",
-      imagePath: imagePath,
+      imagePath,
     });
   } catch (err) {
     console.error("Error fetching image path:", err.message);
@@ -272,3 +297,7 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log("server is running on port", server.address().port);
 });
+
+function prepareBase64DataUrl(base64String) {
+  return base64String.replace("data:image/png;", "data:image/png;charset=utf-8;").replace(/^.+,/, "");
+}
