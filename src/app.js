@@ -7,7 +7,7 @@ const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 const uuid = require("uuid");
 const sha256 = require("js-sha256").sha256;
-
+const { startCase } = require("lodash");
 const OpenAI = require("openai");
 
 const swaggerDocument = YAML.load(path.join(__dirname, "./doc/swagger.yaml"));
@@ -92,7 +92,7 @@ app.post("/save-user", async (req, res) => {
     let imageUrl = "";
 
     if (userData.imagePath) {
-      console.log("User provided image");
+      console.log("User provided an image");
       const fileName = `images/${uuid.v4()}.png`;
       // Convert base64 to buffer as Supabase storage expects a Blob/File/Buffer
       const imageBuffer = Buffer.from(prepareBase64DataUrl(userData.imagePath), "base64");
@@ -176,6 +176,8 @@ app.post("/save-user", async (req, res) => {
       user: userArray ? userArray[0] : {},
       userInfo: userInfoArray ? userInfoArray[0] : {},
     };
+
+    generateUserMealPlan(userDataModel);
 
     res.status(200).json({
       message: "User and related data saved successfully.",
@@ -263,21 +265,104 @@ app.get("/get-image-path/:userId", async (req, res) => {
 //#endregion
 
 //#region OPENAI
+async function generateUserMealPlan(userDataModel) {
+  console.log("Generating meal plan");
+  const { userId, imagePath, dateOfGame, weight, height, mealsAmount, ...relevantUserData } = userDataModel;
 
-function createGPTPrompt(answers) {
-  let prompt = `Create a personalized meal plan for an athlete with the following details:\n`;
-  for (const [key, value] of Object.entries(answers)) {
-    prompt += `- ${key}: ${value}\n`;
+  const daysUntilGame = getDaysUntilGame(dateOfGame);
+  const availableFoodItems = !imagePath ? "" : await getFoodItemsInFridge(imagePath); // calls GPT4V - feel free to use but sparingly
+  const mealPlanPrompt = createMealPlanPrompt({
+    ...relevantUserData,
+    weight: `${weight}kg`,
+    height: `${height}cm`,
+    mealsPerDay: mealsAmount,
+    daysUntilGame,
+    availableFoodItems,
+  });
+
+  const { choices } = await openai.chat.completions.create({
+    messages: [{ role: "user", content: mealPlanPrompt }],
+    model: "gpt-3.5-turbo",
+  });
+  const mealPlan = choices[0].message.content;
+
+  const entry = { userId, output: mealPlan, prompt: mealPlanPrompt, foodItems: availableFoodItems };
+  const { data, error } = await supabase.from("MealPlan").insert([entry]).select();
+
+  if (error) {
+    console.log({ error });
+    throw error;
   }
-  prompt += `Provide nutritional advice and meal suggestions based on these details.`;
+
+  console.log("Meal plan generated successfully:", data[0]);
+}
+
+function getDaysUntilGame(dateOfGame) {
+  return Math.round((dateOfGame - new Date()) / 1000 / 60 / 60 / 24);
+}
+
+async function getFoodItemsInFridge(fridgeImagePath) {
+  const body = {
+    model: "gpt-4-vision-preview",
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Provide a comma-separated list of the food items clearly visible in the fridge. Only provide the list of food items, nothing else, do not describe each item. Only return the items you can clearly see in the fridge.",
+          },
+          { type: "image_url", image_url: { url: fridgeImagePath } },
+        ],
+      },
+    ],
+    max_tokens: 300,
+  };
+
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY_GPT4V}` };
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const { choices } = await res.json();
+  return choices[0].message.content;
+}
+
+function createMealPlanPrompt(data) {
+  let prompt = `Create a personalized, 7-day meal plan for an athlete with the following details, ONLY using the available food items provided. Be mindful of the allergies listed:\n`;
+
+  for (const [key, value] of Object.entries(data)) {
+    prompt += `- ${startCase(key)}: ${value}\n`;
+  }
+
+  prompt += `Structure the plan as breakfast, lunch, and dinner (with snacks if appropriate), and also provide nutritional advice and meal suggestions after the meal plan.`;
+
   return prompt;
 }
+
+app.get("/meal-plan/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const { data, error } = await supabase.from("MealPlan").select("*").eq("userId", userId).single();
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error("Failed to get meal plan:", error);
+    res.status(404).send({ message: "No meal plan found for user" });
+  }
+});
 
 // Endpoint to generate personalized meal plan
 app.post("/generate-meal-plan", async (req, res) => {
   try {
-    const userAnswers = req.body;
-    const prompt = createGPTPrompt(userAnswers);
+    const userData = req.body;
+    const prompt = createMealPlanPrompt(userData);
 
     const completion = await openai.chat.completions.create({
       messages: [{ role: "system", content: prompt }],
