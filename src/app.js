@@ -325,8 +325,9 @@ async function getFoodItemsInFridge(fridgeImagePath) {
     headers,
     body: JSON.stringify(body),
   });
-  const { choices } = await res.json();
-  return choices[0].message.content;
+  const data = await res.json();
+  console.log(data);
+  return data.choices[0].message.content;
 }
 
 function createMealPlanPrompt(data) {
