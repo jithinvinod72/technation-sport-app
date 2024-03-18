@@ -15,7 +15,7 @@ const questionsData = require("./json/questions");
 const coachQuestionsData = require("./json/coachQuestions");
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "https://fitfeed.onrender.com" }));
 app.use(express.json({ limit: "50mb" }));
 app.use(bodyParser.json({ limit: "50mb" }));
 require("dotenv").config();
