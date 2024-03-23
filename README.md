@@ -1,3 +1,6 @@
+
+![FitFeed-Project-Image](https://github.com/jithinvinod72/technation-sport-app/assets/72181381/749c3152-3e3e-4e37-8d6b-4814870d1196)
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
